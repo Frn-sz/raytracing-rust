@@ -1,11 +1,10 @@
 use anyhow::anyhow;
 use sdl2::{
+    event::{self, Event},
     keyboard::Keycode,
     pixels::Color,
     rect::Rect,
     render::Canvas,
-    surface::{self},
-    sys::{SDL_FillRect, SDL_Rect},
     video::Window,
 };
 
@@ -47,6 +46,7 @@ fn DrawCircle(
 
     Ok(())
 }
+
 fn main() -> Result<(), anyhow::Error> {
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
@@ -58,26 +58,36 @@ fn main() -> Result<(), anyhow::Error> {
         .unwrap();
 
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-
+    let mut circle_x_pos = 0;
+    let mut circle_y_pos = 0;
     canvas.set_draw_color(Color::RGB(255, 255, 255));
-
-    DrawCircle(&mut canvas, (WIDTH / 2) as i32, (HEIGHT / 2) as i32, 200)?;
 
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                sdl2::event::Event::Quit { .. }
-                | sdl2::event::Event::KeyDown {
+                Event::Quit { .. }
+                | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => {
                     break 'running;
                 }
+                Event::MouseMotion {
+                    x, y, mousestate, ..
+                } => {
+                    circle_x_pos = x;
+                    circle_y_pos = y;
+                }
                 _ => {}
             }
         }
+        canvas.set_draw_color(Color::BLACK);
+        let _ = canvas.fill_rect(Rect::new(0, 0, WIDTH, HEIGHT));
+
+        DrawCircle(&mut canvas, circle_x_pos, circle_y_pos, 200)?;
+        canvas.present();
     }
 
     Ok(())
